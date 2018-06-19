@@ -1,0 +1,14 @@
+{
+    "_text":"Are you feeling happy?",
+    "entities":{
+        "feeling":[{
+            "confidence":1,
+            "value":"happy",
+            "type":"value"
+            }],
+        "get_mood":[{
+            "confidence":0.99794724683354,
+            "value":"mood"}]
+        },
+    "msg_id":"0KP2boU8aaNRBweKA"
+}

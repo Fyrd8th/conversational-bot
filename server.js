@@ -20,6 +20,19 @@ const witClient = new Wit({
   logger: new log.Logger(log.DEBUG) // optional
 });
 
+// for Wit intents
+let intents = new Discord.Collection();
+const intentFiles = fs.readdirSync('./intents').filter(file => file.endsWith('.js'));
+
+for (const file of intentFiles) {
+    const intent = require(`./intents/${file}`);
+    intents.set(intent.name, intent);
+}
+
+
+/**
+ * STARTING THE PROCESS
+ */
 client.on('ready', () => {
     console.log('Conversation ready to receive');
 });
@@ -69,8 +82,27 @@ client.on('message', message => {
     else {
         witClient.message(message, {})
         .then((data) => {
-            //const response = JSON.stringify(data);
-            // console.log(response);
+            //console.log(data);
+
+            if(data['entities'] != null) {
+                console.log(data.entities.length);
+/*                 for (entity of data['entities']) {
+                    const intent = intents.get(entity);
+                    console.log(entity);
+
+                    if(!intent) return;
+
+                    // default behaviour, execute command
+                    try {
+                        intent.execute(message, args);
+                    }
+                    catch (error) {
+                        console.error(error);
+                        message.reply('There was error executing the intent.');
+                    }
+                } */
+            }
+
             return message.reply('You said: ' + data['_text']);
         })
         .catch(console.error);
