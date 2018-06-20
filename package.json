@@ -21,6 +21,7 @@
   "homepage": "https://github.com/Fyrd8th/conversational-bot#readme",
   "dependencies": {
     "discord.js": "^11.3.2",
+    "mongodb": "^3.0.10",
     "node-wit": "^5.0.0"
   }
 }

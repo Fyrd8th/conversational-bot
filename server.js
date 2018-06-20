@@ -1,8 +1,8 @@
 // geeral dependencies
 const fs = require('fs');
-const {Dtoken, Wtoken, prefix} = require('./config/config.json');
+const {Dtoken, Wtoken, prefix, DBuser, DBpass, DBaddress} = require('./config/config.json');
 
-// for Discord access
+// Discord access
 const Discord = require('discord.js');
 const client = new Discord.Client();
 client.commands = new Discord.Collection();
@@ -13,7 +13,7 @@ for (const file of commandFiles) {
     client.commands.set(command.name, command);
 }
 
-// for Wit.ai access
+// Wit.ai access
 const {Wit, log} = require('node-wit');
 const witClient = new Wit({
   accessToken: Wtoken,
@@ -28,6 +28,14 @@ for (const file of intentFiles) {
     const intent = require(`./intents/${file}`);
     intents.set(intent.name, intent);
 }
+
+// database access
+const mongoClient = require('mongodb').MongoClient;
+const db;
+mongoClient.connect(`mongodb://${DBuser}:${DBpass}@${DBaddress}`, (err, db) => {
+    if(err) return console.log(err);
+    db = client.db('fyrdintents');
+})
 
 
 /**
