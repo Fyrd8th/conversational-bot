@@ -82,15 +82,17 @@ client.on('message', message => {
     else {
         witClient.message(message, {})
         .then((data) => {
-            //console.log(data);
+            //console.log(data['data']);
 
-            if(data['entities'] != null) {
-                console.log(data.entities.length);
-/*                 for (entity of data['entities']) {
-                    const intent = intents.get(entity);
+            if(data['data'][0]['__wit__legacy_response'] != undefined) {
+                for(let entity in data['data'][0]['__wit__legacy_response']['entities']) {
                     console.log(entity);
+                    const intent = intents.get(entity);
+                    args = {}; // context variables here?
 
-                    if(!intent) return;
+                    if (!intent) {
+                        return message.reply(`I don't get you, at all.`);
+                    }
 
                     // default behaviour, execute command
                     try {
@@ -98,12 +100,15 @@ client.on('message', message => {
                     }
                     catch (error) {
                         console.error(error);
-                        message.reply('There was error executing the intent.');
+                        message.reply(`I can't process that.`);
                     }
-                } */
-            }
+                }
 
-            return message.reply('You said: ' + data['_text']);
+                //return message.reply('You said: ' + data['data'][0]['__wit__legacy_response']['_text']);
+            }
+            else {
+                return message.reply(`I'm still working on this portion of my code`);
+            }
         })
         .catch(console.error);
     }

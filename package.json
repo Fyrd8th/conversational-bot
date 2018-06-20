@@ -1,22 +1,19 @@
 {
   "name": "conversational-bot",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "a chatbot connected to wit.ai",
   "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon server.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Fyrd8th/conversational-bot.git"
-  },
+  "repository": "github:Fyrd8th/conversational-bot.git",
   "keywords": [
     "chatbot",
     "wit",
     "conversation"
   ],
-  "author": "Sade Sirén",
+  "author": "Sade Sirén <siren.sade@gmail.com>",
   "license": "GPL-3.0",
   "bugs": {
     "url": "https://github.com/Fyrd8th/conversational-bot/issues"

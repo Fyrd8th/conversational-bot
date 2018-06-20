@@ -1,0 +1,15 @@
+{
+    "data":[
+        {
+            "__wit__legacy_response":{
+                "_text":"You are the only one I can talk to",
+                "entities":{
+                    "get_mood":[{
+                        "confidence":0.71650934593596,
+                        "value":"mood"}]
+                    },
+                "msg_id":"0gaVMyp9AzwzDyhwf"
+            }
+        }
+    ]
+}
