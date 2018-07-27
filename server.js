@@ -1,6 +1,6 @@
 // geeral dependencies
 const fs = require('fs');
-const {Dtoken, Wtoken, prefix, DBuser, DBpass, DBaddress} = require('./config/config.json');
+const {Dtoken, Wtoken, prefix, character, DBuser, DBpass, DBaddress} = require('./config/config.json');
 
 // Discord access
 const Discord = require('discord.js');
@@ -95,6 +95,9 @@ discordClient.on('message', message => {
         let mood = "";
         let objective = "";
         let output = "";
+        let replysent = false; // used for sending just one reply
+
+        message.channel.startTyping();
 
         witClient.message(message, {})
         .then((data) => {
@@ -108,16 +111,22 @@ discordClient.on('message', message => {
                 //return message.reply('You said: ' + data['data'][0]['__wit__legacy_response']['_text']);
             }
             else {
-                Context.findOne({ name: "Fyrd" })
+                Context.findOne({ name: character }) // which character's entities to get
                 .exec()
                 .then((result) => {
                     //console.log(result);
+
+                    // save the current status of the character
                     mood = result.mood;
                     objective = result.objective;
 
-                    console.log("Fyrd's mood is: " + mood + "\nand objective is: " + objective);
+                    console.log(character + "'s mood is: " + mood + "\nand objective is: " + objective);
                 })
                 .then(() => {
+                    /**
+                     * There might be multiple entities in the Wit response
+                     * We want just the one matching the database
+                     */
                     for(let entity in data['entities']) {
                         console.log("Wit entity was: "+ entity);
     
@@ -126,28 +135,42 @@ discordClient.on('message', message => {
                             'res.mood': mood,
                             'res.obj': objective
                         })
-                        .select('res.rep')
-                        .exec((err, reply) => {
-                            if(!err) {
-                                console.log(reply);
-                                if(reply === null) {
-                                   // do nothing, the intent wasn't found
-                                   // maybe log these in database for later?
-                                }
-                                else {
-                                    output += reply.rep;
+                        .exec()
+                        .then((reply) => {
+                            if(reply === null) {
+                                // do nothing, the intent wasn't found
+                                // maybe log these in database for later?
+                                // output = "I have no words for that...";
+                            }
+                            else {
+                                // finding the response matching the mood and objective in context
+                                for (var i = 0, len = reply.res.length; i < len; i++) {
+                                    const res = reply.res[i];
+                                    if(res.mood == mood && res.obj == objective) {
+                                        output += res.rep;
+                                        break;
+                                    }
                                 }
                             }
                         })
+                        .then(() => {
+                            // see if a reply has already been posted
+                            if(!replysent) {
+                                if (output == "") {
+                                    // do nothing
+                                    // return message.reply(`I don't get you, at all.`);
+                                }
+                                else {
+                                    replysent = true;
+                                    message.channel.stopTyping();
+                                    return message.reply(output, {split: true});
+                                }
+                            }
+                        })
+                        .catch((err) => console.log(err));
                     }
-                });
-
-                if (output == "") {
-                    return message.reply(`I don't get you, at all.`);
-                }
-                else {
-                    return message.reply(output);
-                }
+                })
+                .catch((err) => console.log("Finding context gives error:" + err));
             }
         })
         .catch(console.error);

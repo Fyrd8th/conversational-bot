@@ -13,8 +13,8 @@ const responseSchema = new Schema({
 
 // the schema for intents
 const intentSchema = new Schema({
+    // note that the string needs to be an exact math of your Wit entity!
     id: String,
-    // this is nested, find out how it works!
     res: [responseSchema]
 });
 
