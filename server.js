@@ -20,14 +20,10 @@ const witClient = new Wit({
   logger: new log.Logger(log.DEBUG) // optional
 });
 
-// for Wit intents
-let intents = new Discord.Collection();
-const intentFiles = fs.readdirSync('./intents').filter(file => file.endsWith('.js'));
-
-for (const file of intentFiles) {
-    const intent = require(`./intents/${file}`);
-    intents.set(intent.name, intent);
-}
+// for Wit intents/database handling
+// in-progress
+//const getReply = require('./intents/getReply.js');
+//const getContext = require('./intents/getContext.js');
 
 // database access
 const mongoose = require('mongoose');
@@ -92,13 +88,63 @@ discordClient.on('message', message => {
      * NLU MESSAGES
      */
     else {
-        let mood = "";
-        let objective = "";
-        let output = "";
-        let replysent = false; // used for sending just one reply
-
         message.channel.startTyping();
 
+        let context = {
+            mood: "",
+            objective: ""
+        }
+
+        let replysent = false; // used for sending just one reply
+        let output = "";
+
+        Context.findOne({ name: character }) // which character's entities to get
+            .exec() //finding context
+            .then((result) => {
+                //console.log(result);
+
+                // save the current status of the character
+                context.mood = result.mood;
+                context.objective = result.objective;
+            })
+            .then(() => {
+                return witClient.message(message, {});
+            })
+            .then(data => {
+                let currentIntent;
+
+                /* Promise.aLL?
+                for(let entity in data[entities]) {
+                    console.log("Wit entity was: "+ entity);
+                    Intent.findOne({ id: entity }).exec()
+                        .then(result => {
+                            if(result === null) {
+                                // do nothing, the intent wasn't found
+                            }
+                            else {
+                                // return the intent
+                                
+                            }
+                        })
+                }
+                */
+
+                message.channel.stopTyping();
+            })
+            /*
+            .then(() => {
+                for (var i = 0, len = reply.res.length; i < len; i++) {
+                    const res = reply.res[i];
+                    if(res.mood == mood && res.obj == objective) {
+                        output += res.rep;
+                        break;
+                    }
+                }
+            })
+            */
+            .catch(err => console.log(err));
+        
+        /*
         witClient.message(message, {})
         .then((data) => {
             //console.log(data['data']);
@@ -123,10 +169,8 @@ discordClient.on('message', message => {
                     console.log(character + "'s mood is: " + mood + "\nand objective is: " + objective);
                 })
                 .then(() => {
-                    /**
-                     * There might be multiple entities in the Wit response
-                     * We want just the one matching the database
-                     */
+                    // There might be multiple entities in the Wit response
+                    // We want just the one matching the database
                     for(let entity in data['entities']) {
                         console.log("Wit entity was: "+ entity);
     
@@ -174,6 +218,8 @@ discordClient.on('message', message => {
             }
         })
         .catch(console.error);
+        */
+       
     }
 });
 
