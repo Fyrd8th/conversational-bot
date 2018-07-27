@@ -4,13 +4,13 @@ const {Dtoken, Wtoken, prefix, DBuser, DBpass, DBaddress} = require('./config/co
 
 // Discord access
 const Discord = require('discord.js');
-const client = new Discord.Client();
-client.commands = new Discord.Collection();
+const discordClient = new Discord.Client();
+discordClient.commands = new Discord.Collection();
 const commandFiles = fs.readdirSync('./commands').filter(file => file.endsWith('.js'));
 
 for (const file of commandFiles) {
     const command = require(`./commands/${file}`);
-    client.commands.set(command.name, command);
+    discordClient.commands.set(command.name, command);
 }
 
 // Wit.ai access
@@ -30,22 +30,26 @@ for (const file of intentFiles) {
 }
 
 // database access
-const mongoClient = require('mongodb').MongoClient;
-const db;
-mongoClient.connect(`mongodb://${DBuser}:${DBpass}@${DBaddress}`, (err, db) => {
-    if(err) return console.log(err);
-    db = client.db('fyrdintents');
-})
+const mongoose = require('mongoose');
+const mongoDB = `mongodb://${DBuser}:${DBpass}@${DBaddress}`;
+mongoose.connect(mongoDB);
+mongoose.Promise = global.Promise;
+const db = mongoose.connection;
+db.on("error", console.error.bind(console, "MongoDB connection error: "));
+
+const Context = require('./models/contextmodel.js');
+const Intent = require('./models/intentmodel.js');
+// end of database shenanigans
 
 
 /**
  * STARTING THE PROCESS
  */
-client.on('ready', () => {
+discordClient.on('ready', () => {
     console.log('Conversation ready to receive');
 });
 
-client.on('message', message => {
+discordClient.on('message', message => {
 
     if (message.author.bot) {
         // don't process the bot's own messages
@@ -60,7 +64,7 @@ client.on('message', message => {
         const args = message.content.slice(prefix.length).split(/ +/);
         const commandName = args.shift().toLowerCase();
 
-        const command = client.commands.get(commandName) || client.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
+        const command = discordClient.commands.get(commandName) || discordClient.commands.find(cmd => cmd.aliases && cmd.aliases.includes(commandName));
         // don't process commands that don't exist
         if (!command) return;
 
@@ -88,38 +92,66 @@ client.on('message', message => {
      * NLU MESSAGES
      */
     else {
+        let mood = "";
+        let objective = "";
+        let output = "";
+
         witClient.message(message, {})
         .then((data) => {
             //console.log(data['data']);
 
-            if(data['data'][0]['__wit__legacy_response'] != undefined) {
-                for(let entity in data['data'][0]['__wit__legacy_response']['entities']) {
-                    console.log(entity);
-                    const intent = intents.get(entity);
-                    args = {}; // context variables here?
+            // if wit sends legacy reply
+            if(data['data'] != undefined) {
+                message.reply(`Wit is using some legacy reply, try again later.`);
 
-                    if (!intent) {
-                        return message.reply(`I don't get you, at all.`);
-                    }
-
-                    // default behaviour, execute command
-                    try {
-                        intent.execute(message, args);
-                    }
-                    catch (error) {
-                        console.error(error);
-                        message.reply(`I can't process that.`);
-                    }
-                }
-
+                //for(let entity in data['data'][0]['__wit__legacy_response']['entities']) 
                 //return message.reply('You said: ' + data['data'][0]['__wit__legacy_response']['_text']);
             }
             else {
-                return message.reply(`I'm still working on this portion of my code`);
+                Context.findOne({ name: "Fyrd" })
+                .exec()
+                .then((result) => {
+                    //console.log(result);
+                    mood = result.mood;
+                    objective = result.objective;
+
+                    console.log("Fyrd's mood is: " + mood + "\nand objective is: " + objective);
+                })
+                .then(() => {
+                    for(let entity in data['entities']) {
+                        console.log("Wit entity was: "+ entity);
+    
+                        Intent.findOne({ 
+                            id: entity,
+                            'res.mood': mood,
+                            'res.obj': objective
+                        })
+                        .select('res.rep')
+                        .exec((err, reply) => {
+                            if(!err) {
+                                console.log(reply);
+                                if(reply === null) {
+                                   // do nothing, the intent wasn't found
+                                   // maybe log these in database for later?
+                                }
+                                else {
+                                    output += reply.rep;
+                                }
+                            }
+                        })
+                    }
+                });
+
+                if (output == "") {
+                    return message.reply(`I don't get you, at all.`);
+                }
+                else {
+                    return message.reply(output);
+                }
             }
         })
         .catch(console.error);
     }
 });
 
-client.login(Dtoken);
+discordClient.login(Dtoken);

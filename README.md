@@ -38,7 +38,10 @@ The config file must be within the 'config'-folder, and be named config.json. th
 {
     "Dtoken" : " ",
     "Wtoken" : " ",
-    "prefix" : " "
+    "prefix" : " ",
+    "DBuser" : " ",
+    "DBpass" : " ", 
+    "DBaddress" : " "
 }
 ```
 You can add more config variable as you see fit, but these are the bare minimums for the bot to work.
@@ -54,3 +57,4 @@ Set up your Wit.ai app in https://wit.ai. Once you have made the initial applica
 ## Database
 
 This project will assume you are using mLab as a mongoDB provider, you can make your free account here https://mlab.com/. You'll find the database address once you have set up your database there. Also take note of the user's username and password that you'll set up (this is not the username and password you use to log into mLab, these are set specifically for the database itself!). Place all of these into the config.json's respective slots.
+The database address is the *end part* of the address, this means everything after the @-sign.
