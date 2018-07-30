@@ -102,7 +102,7 @@ discordClient.on('message', message => {
                 context.mood = result.mood;
                 context.objective = result.objective;
 
-                // send for Wit to process
+                // send message for Wit to process
                 return witClient.message(message, {});
             })
             .then(data => {
@@ -133,7 +133,10 @@ discordClient.on('message', message => {
                     })
                     .catch(reason => console.log(reason));
             })
-            .catch(err => console.log(err));
+            .catch(err => {
+                console.log(err);
+                message.reply("I can't handle this right now...");
+            });
         
         // for going to through the found intent and finding match
         // with the context
@@ -143,6 +146,18 @@ discordClient.on('message', message => {
                 if(response.mood == context.mood && response.obj == context.objective) {
                     output += response.rep;
                     break;
+                }
+            }
+
+            // go for default if no context match id found
+            if(output == "") {
+                //go reverse, since default should be the last one
+                for(var i = intent.res.length-1; i > 0; i--) {
+                    const response = intent.res[i];
+                    if(response.mood == "default") {
+                        output += response.rep;
+                        break;
+                    }
                 }
             }
 
