@@ -20,11 +20,6 @@ const witClient = new Wit({
   logger: new log.Logger(log.DEBUG) // optional
 });
 
-// for Wit intents/database handling
-// in-progress
-//const getReply = require('./intents/getReply.js');
-//const getContext = require('./intents/getContext.js');
-
 // database access
 const mongoose = require('mongoose');
 const mongoDB = `mongodb://${DBuser}:${DBpass}@${DBaddress}`;
