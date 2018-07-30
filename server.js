@@ -95,9 +95,9 @@ discordClient.on('message', message => {
             objective: ""
         }
 
-        let replysent = false; // used for sending just one reply
         let output = "";
 
+        // ultimately find an intent from input that has a match in database
         Context.findOne({ name: character }) // which character's entities to get
             .exec() //finding context
             .then((result) => {
@@ -106,119 +106,55 @@ discordClient.on('message', message => {
                 // save the current status of the character
                 context.mood = result.mood;
                 context.objective = result.objective;
-            })
-            .then(() => {
+
+                // send for Wit to process
                 return witClient.message(message, {});
             })
             .then(data => {
                 let currentIntent;
+                let queries= [];
+                console.log(data);
 
-                /* Promise.aLL?
-                for(let entity in data[entities]) {
-                    console.log("Wit entity was: "+ entity);
-                    Intent.findOne({ id: entity }).exec()
-                        .then(result => {
-                            if(result === null) {
-                                // do nothing, the intent wasn't found
-                            }
-                            else {
-                                // return the intent
-                                
-                            }
-                        })
+                for(let entity in data.entities) {
+                    //console.log("Wit entity was: "+ entity); // not needed!
+                    queries.push(Intent.findOne({ id: entity }).exec()
+                    .then(result => {
+                        if(result === null) {
+                            // do nothing, the intent wasn't found
+                        }
+                        else {
+                            // return the intent
+                            currentIntent = result;
+                        }
+                    }));
                 }
-                */
 
-                message.channel.stopTyping();
+                Promise.all(queries)
+                    .then(() => {
+                        //console.log("current intent is: ");
+                        //console.log(currentIntent);
+
+                        getOutput(currentIntent);
+                    })
+                    .catch(reason => console.log(reason));
             })
-            /*
-            .then(() => {
-                for (var i = 0, len = reply.res.length; i < len; i++) {
-                    const res = reply.res[i];
-                    if(res.mood == mood && res.obj == objective) {
-                        output += res.rep;
-                        break;
-                    }
-                }
-            })
-            */
             .catch(err => console.log(err));
         
-        /*
-        witClient.message(message, {})
-        .then((data) => {
-            //console.log(data['data']);
-
-            // if wit sends legacy reply
-            if(data['data'] != undefined) {
-                message.reply(`Wit is using some legacy reply, try again later.`);
-
-                //for(let entity in data['data'][0]['__wit__legacy_response']['entities']) 
-                //return message.reply('You said: ' + data['data'][0]['__wit__legacy_response']['_text']);
+        // for going to through the found intent and finding match
+        // with the context
+        function getOutput(intent) {
+            for (var i = 0, len = intent.res.length; i < len; i++) {
+                const response = intent.res[i];
+                if(response.mood == context.mood && response.obj == context.objective) {
+                    output += response.rep;
+                    break;
+                }
             }
-            else {
-                Context.findOne({ name: character }) // which character's entities to get
-                .exec()
-                .then((result) => {
-                    //console.log(result);
 
-                    // save the current status of the character
-                    mood = result.mood;
-                    objective = result.objective;
-
-                    console.log(character + "'s mood is: " + mood + "\nand objective is: " + objective);
-                })
-                .then(() => {
-                    // There might be multiple entities in the Wit response
-                    // We want just the one matching the database
-                    for(let entity in data['entities']) {
-                        console.log("Wit entity was: "+ entity);
-    
-                        Intent.findOne({ 
-                            id: entity,
-                            'res.mood': mood,
-                            'res.obj': objective
-                        })
-                        .exec()
-                        .then((reply) => {
-                            if(reply === null) {
-                                // do nothing, the intent wasn't found
-                                // maybe log these in database for later?
-                                // output = "I have no words for that...";
-                            }
-                            else {
-                                // finding the response matching the mood and objective in context
-                                for (var i = 0, len = reply.res.length; i < len; i++) {
-                                    const res = reply.res[i];
-                                    if(res.mood == mood && res.obj == objective) {
-                                        output += res.rep;
-                                        break;
-                                    }
-                                }
-                            }
-                        })
-                        .then(() => {
-                            // see if a reply has already been posted
-                            if(!replysent) {
-                                if (output == "") {
-                                    // do nothing
-                                    // return message.reply(`I don't get you, at all.`);
-                                }
-                                else {
-                                    replysent = true;
-                                    message.channel.stopTyping();
-                                    return message.reply(output, {split: true});
-                                }
-                            }
-                        })
-                        .catch((err) => console.log(err));
-                    }
-                })
-                .catch((err) => console.log("Finding context gives error:" + err));
-            }
-        })
-        .catch(console.error);
-        */
+            //console.log("reply is:" + output);
+            message.reply(output);
+            message.channel.stopTyping();
+        }
        
     }
 });
