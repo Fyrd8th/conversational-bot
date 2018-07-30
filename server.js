@@ -141,26 +141,31 @@ discordClient.on('message', message => {
         // for going to through the found intent and finding match
         // with the context
         function getOutput(intent) {
-            for (var i = 0, len = intent.res.length; i < len; i++) {
-                const response = intent.res[i];
-                if(response.mood == context.mood && response.obj == context.objective) {
-                    output += response.rep;
-                    break;
-                }
+            if(!intent) { // handle case where no intent was recognized
+                output+= "I don't get you, at all...";
             }
-
-            // go for default if no context match id found
-            if(output == "") {
-                //go reverse, since default should be the last one
-                for(var i = intent.res.length-1; i > 0; i--) {
+            else { // there is intent, go through options to find match to context
+                for (var i = 0, len = intent.res.length; i < len; i++) {
                     const response = intent.res[i];
-                    if(response.mood == "default") {
+                    if(response.mood == context.mood && response.obj == context.objective) {
                         output += response.rep;
                         break;
                     }
                 }
-            }
 
+                // go for default if no context match id found
+                if(output == "") {
+                    //go reverse, since default should be the last one
+                    for(var i = intent.res.length-1; i > 0; i--) {
+                        const response = intent.res[i];
+                        if(response.mood == "default") {
+                            output += response.rep;
+                            break;
+                        }
+                    }
+                }
+            }
+            
             //console.log("reply is:" + output);
             message.reply(output);
             message.channel.stopTyping();
