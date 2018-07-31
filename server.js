@@ -33,6 +33,8 @@ const Intent = require('./models/intentmodel.js');
 const Activity = require('./models/activitymodel.js');
 // end of database shenanigans
 
+// actions
+const activityModule = require('./actions/activity.js');
 
 /**
  * STARTING THE PROCESS
@@ -91,7 +93,7 @@ discordClient.on('message', message => {
             objective: ""
         }
 
-        let output = "";
+        let replysent = false; // for checking if a reply is sent
 
         // ultimately find an intent from input that has a match in database
         Context.findOne({ name: character }) // which character's entities to get
@@ -112,7 +114,6 @@ discordClient.on('message', message => {
                 console.log(data);
 
                 for(let entity in data.entities) {
-                    //console.log("Wit entity was: "+ entity); // not needed!
                     queries.push(Intent.findOne({ id: entity }).exec()
                     .then(result => {
                         if(result === null) {
@@ -143,42 +144,48 @@ discordClient.on('message', message => {
         // with the context
         function getOutput(intent) {
             if(!intent) { // handle case where no intent was recognized
-                output+= "I don't get you, at all...";
+                message.reply("I don't get you, at all...");
             }
             else { // there is intent, go through options to find match to context
                 for (var i = 0, len = intent.res.length; i < len; i++) {
                     const response = intent.res[i];
                     if(response.mood == context.mood && response.obj == context.objective) {
-                        output += response.rep;
+                        message.reply(response.rep);
                         if(response.pro) {
-                            output += "\nHow about something like..";
+                            message.reply("How about something like..");
                             // handle getting actions from database
                         }
+                        replysent = true; // so that it won't go find the default option as well
                         break;
                     }
                 }
 
-                // go for default if no context match is found
-                if(output == "") {
-                    //go reverse, since default should be the last one
+                // get default if no context match is found
+                if(!replysent) {
+                    // reverse, since default should be the last one
                     for(var i = intent.res.length-1; i > 0; i--) {
                         const response = intent.res[i];
                         if(response.mood == "default") {
-                            output += response.rep;
+                            message.reply(response.rep);
                             if(response.pro) {
-                                output += " How about something like..";
+                                //message.reply("How about something like..");
                                 // handle getting actions from database
+
+                                try {
+                                    activityModule.getActivity(message, 'play');
+                                }
+                                catch (error) {
+                                    console.log(error);
+                                }
                             }
                             break;
                         }
                     }
-                }
-            }
+                } // end default reply
+            } // end intent handling
             
-            //console.log("reply is:" + output);
-            message.reply(output);
             message.channel.stopTyping();
-        }
+        } // end getOutput()
        
     }
 });
