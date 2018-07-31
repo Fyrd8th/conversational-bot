@@ -2,18 +2,18 @@
 
 /**
  * MOODS:
- * neutral: 1
- * happy: 2
- * sarcastic: 3
- * sad: 4
- * angry: 5
- * baffled: 6
+ * neutral
+ * happy
+ * sarcastic
+ * sad
+ * angry
+ * baffled
  */
 
  /**
   * OBJECTIVES:
-  * helpful: 1
-  * chaos:
+  * helpful
+  * chaos
   */
 
 const mongoose = require("mongoose");

@@ -30,6 +30,7 @@ db.on("error", console.error.bind(console, "MongoDB connection error: "));
 
 const Context = require('./models/contextmodel.js');
 const Intent = require('./models/intentmodel.js');
+const Activity = require('./models/activitymodel.js');
 // end of database shenanigans
 
 
@@ -138,7 +139,7 @@ discordClient.on('message', message => {
                 message.reply("I can't handle this right now...");
             });
         
-        // for going to through the found intent and finding match
+        // for going through the found intent and finding match
         // with the context
         function getOutput(intent) {
             if(!intent) { // handle case where no intent was recognized
@@ -149,17 +150,25 @@ discordClient.on('message', message => {
                     const response = intent.res[i];
                     if(response.mood == context.mood && response.obj == context.objective) {
                         output += response.rep;
+                        if(response.pro) {
+                            output += "\nHow about something like..";
+                            // handle getting actions from database
+                        }
                         break;
                     }
                 }
 
-                // go for default if no context match id found
+                // go for default if no context match is found
                 if(output == "") {
                     //go reverse, since default should be the last one
                     for(var i = intent.res.length-1; i > 0; i--) {
                         const response = intent.res[i];
                         if(response.mood == "default") {
                             output += response.rep;
+                            if(response.pro) {
+                                output += " How about something like..";
+                                // handle getting actions from database
+                            }
                             break;
                         }
                     }

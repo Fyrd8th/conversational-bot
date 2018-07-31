@@ -8,7 +8,8 @@ const Schema = mongoose.Schema;
 const responseSchema = new Schema({
     rep: String,
     mood: String,
-    obj: String
+    obj: String,
+    pro: String
 });
 
 // the schema for intents
